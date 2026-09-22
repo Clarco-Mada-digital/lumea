@@ -1,0 +1,13 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Goutte / pétale stylisé, centré dans la zone sûre 72x72 -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M54,26 C54,26 72,45 72,58 C72,68.5 63.9,77 54,77 C44.1,77 36,68.5 36,58 C36,45 54,26 54,26 Z" />
+    <path
+        android:fillColor="#FFFFD9E4"
+        android:pathData="M54,40 C54,40 64,51 64,58.5 C64,64.3 59.5,69 54,69 Z" />
+</vector>

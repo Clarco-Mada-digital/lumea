@@ -1,0 +1,16 @@
+.gradle/
+.kotlin/
+build/
+local.properties
+*.iml
+.idea/
+.cxx/
+
+# Signature release — à garder hors du dépôt
+keystore.properties
+*.jks
+*.keystore
+
+# Rapports et sorties de build
+/docs/*.pdf
+captures/

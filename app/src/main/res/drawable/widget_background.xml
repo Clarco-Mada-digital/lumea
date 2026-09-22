@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Fond du widget : volontairement sobre et sans marque visible.
+    Un widget qui crie « suivi de grossesse » sur l'écran d'accueil trahirait
+    sa propriétaire auprès de quiconque regarde son téléphone.
+-->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="#F21A1114" />
+    <corners android:radius="24dp" />
+</shape>

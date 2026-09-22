@@ -1,0 +1,17 @@
+<resources>
+    <string name="app_name">Lumea</string>
+
+    <string name="tab_notes">Notes</string>
+    <string name="tab_agenda">Agenda</string>
+    <string name="tab_cycle">Cycle</string>
+    <string name="tab_journal">Journal</string>
+
+    <string name="channel_events_name">Rappels d\'agenda</string>
+    <string name="channel_events_desc">Notifications pour les événements de ton agenda</string>
+    <string name="channel_cycle_name">Rappels de cycle</string>
+    <string name="channel_cycle_desc">Prévisions de règles, ovulation et fenêtre fertile</string>
+    <string name="channel_journal_name">Rappel de journal</string>
+    <string name="channel_journal_desc">Petit rappel quotidien pour écrire ta journée</string>
+
+    <string name="widget_description">Où tu en es, sans ouvrir l\'app</string>
+</resources>
