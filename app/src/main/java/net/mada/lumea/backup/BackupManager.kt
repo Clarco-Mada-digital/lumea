@@ -8,6 +8,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import net.mada.lumea.data.db.DailyLogEntity
+import net.mada.lumea.data.db.EVENT_SOURCE_CARE
 import net.mada.lumea.data.db.EventEntity
 import net.mada.lumea.data.db.FolderEntity
 import net.mada.lumea.data.db.HabitCheckEntity
@@ -173,6 +174,13 @@ class BackupManager(
                     if (replace) {
                         db.pregnancyDao().clear()
                         db.prenatalCareDao().clear()
+                        /*
+                         * Et avec lui, les rendez-vous qu'il avait posés dans
+                         * l'agenda. Sans cette ligne, remplacer les données de
+                         * cycle laissait des CPN et des vaccins orphelins — avec
+                         * leurs rappels — pour un suivi qui n'existait plus.
+                         */
+                        db.eventDao().deleteBySource(EVENT_SOURCE_CARE)
                     }
                     db.pregnancyDao().insertAll(payload.pregnancies.map { it.toEntity() })
                     db.prenatalCareDao().insertAll(payload.prenatalCare.map { it.toEntity() })
@@ -193,6 +201,34 @@ class BackupManager(
              */
             if (selection.settings) payload.settings?.let { applySettings(it) }
             payload.count(selection)
+        }
+    }
+
+    /**
+     * Efface les catégories demandées, en une seule transaction.
+     *
+     * Le cycle emporte la grossesse, le carnet **et** les rendez-vous que le
+     * carnet avait posés dans l'agenda : c'est précisément ce qui restait
+     * orphelin jusqu'ici. Les événements saisis à la main ne sont jamais touchés,
+     * sauf à cocher « Agenda ».
+     */
+    suspend fun erase(selection: EraseSelection): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            db.withTransaction {
+                if (selection.notes) db.noteDao().clear()
+                if (selection.events) db.eventDao().clear()
+                if (selection.journal) db.dailyLogDao().clear()
+                if (selection.habits) {
+                    db.habitDao().clearChecks()
+                    db.habitDao().clearHabits()
+                }
+                if (selection.cycle) {
+                    db.periodDao().clear()
+                    db.pregnancyDao().clear()
+                    db.prenatalCareDao().clear()
+                    db.eventDao().deleteBySource(EVENT_SOURCE_CARE)
+                }
+            }
         }
     }
 
@@ -250,6 +286,17 @@ data class BackupSelection(
 ) {
     val isEmpty: Boolean get() =
         !notes && !events && !periods && !logs && !habits && !settings
+}
+
+/** Ce qu'on accepte d'effacer. Rien n'est coché par défaut. */
+data class EraseSelection(
+    val notes: Boolean = false,
+    val events: Boolean = false,
+    val cycle: Boolean = false,
+    val journal: Boolean = false,
+    val habits: Boolean = false,
+) {
+    val isEmpty: Boolean get() = !notes && !events && !cycle && !journal && !habits
 }
 
 enum class RestoreMode {

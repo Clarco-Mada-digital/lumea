@@ -58,8 +58,17 @@ class LockManager(context: Context) {
 
     fun failedAttempts(): Int = prefs.getInt(KEY_FAILED, 0)
 
-    /** Vérifie le code sans rien déverrouiller : pour les contenus protégés un par un. */
-    fun check(pin: String): Boolean {
+    /**
+     * Vérifie le code sans rien déverrouiller : pour les contenus protégés un par un.
+     *
+     * [silent] sert aux essais que le pavé fait tout seul dès quatre chiffres, sans
+     * que personne n'ait validé. Ces essais ne doivent **jamais** compter comme des
+     * échecs : avec un code à six chiffres, ils en produisaient deux par saisie
+     * (aux 4ᵉ et 5ᵉ chiffres), le quota de quatre tentatives était épuisé en deux
+     * essais, et le verrouillage temporaire rejetait ensuite le bon code lui-même.
+     * Le code devenait tout simplement impossible à entrer.
+     */
+    fun check(pin: String, silent: Boolean = false): Boolean {
         if (remainingLockoutMillis() > 0) return false
 
         val saltEncoded = prefs.getString(KEY_SALT, null) ?: return false
@@ -71,13 +80,13 @@ class LockManager(context: Context) {
         val ok = java.security.MessageDigest.isEqual(
             candidate.toByteArray(), expected.toByteArray()
         )
-        if (ok) clearFailures() else registerFailure()
+        if (ok) clearFailures() else if (!silent) registerFailure()
         return ok
     }
 
     /** Vérifie le code et déverrouille l'app si c'est le bon. */
-    fun verify(pin: String): Boolean {
-        val ok = check(pin)
+    fun verify(pin: String, silent: Boolean = false): Boolean {
+        val ok = check(pin, silent)
         if (ok) _unlocked.value = true
         return ok
     }

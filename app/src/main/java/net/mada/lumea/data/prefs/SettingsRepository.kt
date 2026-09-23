@@ -10,6 +10,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import net.mada.lumea.domain.agenda.HolidayCountry
 
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore("lumea_settings")
 
@@ -87,6 +88,15 @@ data class Settings(
 
     /** L'invitation à poser un code a été refusée : on ne la repropose plus. */
     val pinInvitationDismissed: Boolean = false,
+
+    /**
+     * Pays dont on affiche les jours fériés dans l'agenda.
+     *
+     * Choisi explicitement plutôt que déduit de la langue du téléphone :
+     * beaucoup d'appareils sont en français sans être en France, et afficher le
+     * 14 juillet à Antananarivo serait aussi faux qu'oublier le 26 juin.
+     */
+    val holidayCountry: HolidayCountry = HolidayCountry.MADAGASCAR,
 )
 
 /** Comment l'assistant doit répondre. Le ton change beaucoup l'utilité perçue. */
@@ -150,6 +160,10 @@ class SettingsRepository(private val context: Context) {
             assistantNotes = p[K.assistantNotes] ?: "",
             widgetDiscreet = p[K.widgetDiscreet] ?: true,
             pinInvitationDismissed = p[K.pinInvitationDismissed] ?: false,
+            holidayCountry = p[K.holidayCountry]?.let { raw ->
+                runCatching { HolidayCountry.valueOf(raw) }
+                    .getOrDefault(HolidayCountry.MADAGASCAR)
+            } ?: HolidayCountry.MADAGASCAR,
         )
     }
 
@@ -183,6 +197,7 @@ class SettingsRepository(private val context: Context) {
     suspend fun setAssistantNotes(value: String) = put(K.assistantNotes, value.take(400))
     suspend fun setWidgetDiscreet(value: Boolean) = put(K.widgetDiscreet, value)
     suspend fun dismissPinInvitation() = put(K.pinInvitationDismissed, true)
+    suspend fun setHolidayCountry(value: HolidayCountry) = put(K.holidayCountry, value.name)
 
     private suspend fun <T> put(key: Preferences.Key<T>, value: T) {
         context.dataStore.edit { it[key] = value }
@@ -221,5 +236,6 @@ class SettingsRepository(private val context: Context) {
         val assistantNotes = stringPreferencesKey("assistant_notes")
         val widgetDiscreet = booleanPreferencesKey("widget_discreet")
         val pinInvitationDismissed = booleanPreferencesKey("pin_invitation_dismissed")
+        val holidayCountry = stringPreferencesKey("holiday_country")
     }
 }

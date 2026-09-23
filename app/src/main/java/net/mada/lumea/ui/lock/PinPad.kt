@@ -55,7 +55,14 @@ const val MAX_PIN = 6
 fun PinPad(
     title: String,
     subtitle: String,
-    verify: (String) -> Boolean,
+    /**
+     * Second paramètre : l'essai est-il silencieux ?
+     *
+     * Le pavé teste tout seul dès quatre chiffres pour que les codes courts
+     * s'ouvrent sans appuyer sur « Valider ». Ces essais-là ne doivent pas être
+     * comptés comme des échecs, sinon un code long devient inutilisable.
+     */
+    verify: (String, Boolean) -> Boolean,
     modifier: Modifier = Modifier,
     onBiometrics: (() -> Unit)? = null,
     /** Millisecondes restantes avant de pouvoir réessayer ; 0 = saisie ouverte. */
@@ -78,7 +85,7 @@ fun PinPad(
 
     fun attempt(candidate: String, loud: Boolean) {
         if (candidate.length < MIN_PIN || lockedOut) return
-        if (verify(candidate)) {
+        if (verify(candidate, !loud)) {
             pin = ""
             error = false
         } else if (loud) {

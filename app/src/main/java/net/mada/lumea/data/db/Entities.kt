@@ -58,7 +58,20 @@ data class EventEntity(
     val repeat: String = "NONE",
     val isDone: Boolean = false,
     val linkedNoteId: Long? = null,
+
+    /**
+     * D'où vient cet événement.
+     *
+     * Vide pour ce que l'utilisatrice a saisi elle-même, [EVENT_SOURCE_CARE] pour
+     * les rendez-vous posés automatiquement depuis le carnet de suivi. Sans cette
+     * distinction, effacer un suivi de grossesse laissait ses rendez-vous de CPN
+     * et de vaccins traîner dans l'agenda, sans plus rien derrière eux.
+     */
+    val source: String = "",
 )
+
+/** Rendez-vous créé depuis le carnet de suivi, et non saisi à la main. */
+const val EVENT_SOURCE_CARE = "CARE"
 
 /** Une période de règles réellement enregistrée par l'utilisatrice. */
 @Entity(tableName = "periods", indices = [Index(value = ["startDate"], unique = true)])

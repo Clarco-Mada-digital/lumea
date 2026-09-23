@@ -67,6 +67,8 @@ class SettingsViewModel(
     fun setAssistantTone(value: AssistantTone) = viewModelScope.launch { repo.setAssistantTone(value) }
     fun setAssistantNotes(value: String) = viewModelScope.launch { repo.setAssistantNotes(value) }
     fun setWidgetDiscreet(value: Boolean) = viewModelScope.launch { repo.setWidgetDiscreet(value) }
+    fun setHolidayCountry(value: net.mada.lumea.domain.agenda.HolidayCountry) =
+        viewModelScope.launch { repo.setHolidayCountry(value) }
 
     fun setJournalReminder(context: Context, enabled: Boolean, minuteOfDay: Int) = viewModelScope.launch {
         repo.setJournalReminder(enabled)
@@ -155,6 +157,18 @@ class SettingsViewModel(
         _restoring.value = false
         _preview.value = null
     }
+
+    /** Efface les catégories choisies, puis rafraîchit le widget. */
+    fun erase(selection: net.mada.lumea.backup.EraseSelection, context: android.content.Context) =
+        viewModelScope.launch {
+            backup.erase(selection).fold(
+                onSuccess = {
+                    net.mada.lumea.widget.LumeaWidget.refreshAll(context)
+                    _message.value = "Données effacées"
+                },
+                onFailure = { _message.value = "Échec de l'effacement : ${it.message}" },
+            )
+        }
 
     fun suggestedFileName(encrypted: Boolean) = backup.suggestedFileName(encrypted)
 }

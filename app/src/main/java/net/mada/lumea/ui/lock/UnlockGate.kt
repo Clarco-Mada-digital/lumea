@@ -101,10 +101,10 @@ fun UnlockPrompt(
         PinPad(
             title = "Déverrouiller",
             subtitle = "Entre ton code pour lire",
-            verify = { candidate ->
+            verify = { candidate, silent ->
                 // `check` et non `verify` : ouvrir une note protégée ne doit pas
                 // changer l'état de verrouillage global de l'application.
-                app.lock.check(candidate).also { if (it) state.unlocked = true }
+                app.lock.check(candidate, silent).also { if (it) state.unlocked = true }
             },
             onBiometrics = if (canUseBiometrics && activity != null) {
                 { promptBiometrics(activity) { state.unlocked = true } }

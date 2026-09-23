@@ -63,10 +63,11 @@ fun AgendaScreen(
     onOpenEvent: (Long) -> Unit,
     onNewEvent: (LocalDate) -> Unit,
 ) {
-    val vm = containerViewModel { AgendaViewModel(it.events) }
+    val vm = containerViewModel { AgendaViewModel(it.events, it.settings) }
     val month by vm.month.collectAsStateWithLifecycle()
     val selectedDay by vm.selectedDay.collectAsStateWithLifecycle()
     val eventsByDay by vm.eventsByDay.collectAsStateWithLifecycle()
+    val holidays by vm.holidays.collectAsStateWithLifecycle()
     val dayEvents by vm.dayEvents.collectAsStateWithLifecycle()
 
     Scaffold(
@@ -98,6 +99,7 @@ fun AgendaScreen(
                         inMonth = inMonth,
                         selected = date == selectedDay,
                         events = eventsByDay[date].orEmpty(),
+                        holiday = holidays[date],
                     )
                 }
             }
@@ -107,8 +109,17 @@ fun AgendaScreen(
                     selectedDay.format(DateTimeFormatter.ofPattern("EEEE d MMMM", Locale.FRENCH))
                         .replaceFirstChar { it.titlecase(Locale.FRENCH) },
                     style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 8.dp),
+                    modifier = Modifier.padding(start = 20.dp, top = 20.dp, bottom = 4.dp),
                 )
+                holidays[selectedDay]?.let { holiday ->
+                    Text(
+                        "🎉  ${holiday.name}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.padding(start = 20.dp, bottom = 8.dp),
+                    )
+                }
+                Spacer(Modifier.height(4.dp))
             }
 
             if (dayEvents.isEmpty()) {
@@ -141,6 +152,7 @@ private fun AgendaDayCell(
     inMonth: Boolean,
     selected: Boolean,
     events: List<EventEntity>,
+    holiday: net.mada.lumea.domain.agenda.Holiday? = null,
 ) {
     val isToday = date == LocalDate.now()
     Box(
@@ -165,6 +177,9 @@ private fun AgendaDayCell(
                     !inMonth -> MaterialTheme.colorScheme.outline.copy(alpha = 0.4f)
                     selected -> MaterialTheme.colorScheme.onPrimaryContainer
                     isToday -> MaterialTheme.colorScheme.primary
+                    // Un férié se lit comme un dimanche : la couleur suffit,
+                    // le nom s'affiche dans la journée sélectionnée.
+                    holiday != null -> MaterialTheme.colorScheme.tertiary
                     else -> MaterialTheme.colorScheme.onSurface
                 },
             )

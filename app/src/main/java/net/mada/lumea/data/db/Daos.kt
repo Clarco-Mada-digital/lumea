@@ -115,6 +115,12 @@ interface EventDao {
 
     @Query("DELETE FROM events")
     suspend fun clear()
+
+    @Query("SELECT COUNT(*) FROM events WHERE source = :source")
+    suspend fun countBySource(source: String): Int
+
+    @Query("DELETE FROM events WHERE source = :source")
+    suspend fun deleteBySource(source: String)
 }
 
 @Dao

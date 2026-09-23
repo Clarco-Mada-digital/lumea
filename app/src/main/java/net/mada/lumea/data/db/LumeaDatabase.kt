@@ -22,7 +22,7 @@ import net.sqlcipher.database.SupportFactory
         PregnancyEntity::class,
         PrenatalCareEntity::class,
     ],
-    version = 5,
+    version = 6,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)
@@ -115,8 +115,21 @@ abstract class LumeaDatabase : RoomDatabase() {
             }
         }
 
-        internal val MIGRATIONS =
-            arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+        /**
+         * Origine des événements d'agenda.
+         *
+         * Permet de retrouver — et donc de supprimer — les rendez-vous créés
+         * depuis le carnet de suivi, qui survivaient à l'effacement du suivi.
+         */
+        internal val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE events ADD COLUMN source TEXT NOT NULL DEFAULT ''")
+            }
+        }
+
+        internal val MIGRATIONS = arrayOf(
+            MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6,
+        )
 
         fun build(context: Context): LumeaDatabase {
             // SQLCipher chiffre le fichier de base ; la clé vit dans le Keystore Android.

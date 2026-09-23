@@ -7,6 +7,7 @@ import net.mada.lumea.domain.agenda.Recurrence
 import net.mada.lumea.data.db.DailyLogDao
 import net.mada.lumea.data.db.DailyLogEntity
 import net.mada.lumea.data.db.EventDao
+import net.mada.lumea.data.db.EVENT_SOURCE_CARE
 import net.mada.lumea.data.db.EventEntity
 import net.mada.lumea.data.db.FolderDao
 import net.mada.lumea.data.db.FolderEntity
@@ -83,6 +84,17 @@ class EventRepository(private val dao: EventDao) {
     suspend fun save(event: EventEntity) = dao.upsert(event)
     suspend fun setDone(id: Long, done: Boolean) = dao.setDone(id, done)
     suspend fun delete(id: Long) = dao.delete(id)
+
+    /** Les rendez-vous posés automatiquement depuis le carnet de suivi. */
+    suspend fun countGeneratedCare() = dao.countBySource(EVENT_SOURCE_CARE)
+
+    /**
+     * Retire les rendez-vous du carnet.
+     *
+     * Ne touche à rien de ce que l'utilisatrice a saisi elle-même : seuls les
+     * événements marqués comme venant du carnet sont supprimés.
+     */
+    suspend fun deleteGeneratedCare() = dao.deleteBySource(EVENT_SOURCE_CARE)
 
     /**
      * Les alarmes à (re)poser : les événements ponctuels à venir, plus la prochaine

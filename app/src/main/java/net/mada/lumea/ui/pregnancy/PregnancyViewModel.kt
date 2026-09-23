@@ -179,6 +179,9 @@ class PregnancyViewModel(
                         // La veille : assez tôt pour s'organiser, assez tard pour
                         // qu'on s'en souvienne encore.
                         reminderMinutes = 24 * 60,
+                        // Marqué comme venant du carnet : c'est ce qui permet
+                        // de les retirer tous quand le suivi est effacé.
+                        source = net.mada.lumea.data.db.EVENT_SOURCE_CARE,
                     )
                 )
                 count++
@@ -261,10 +264,20 @@ class PregnancyViewModel(
         settingsRepo?.dismissPinInvitation()
     }
 
-    /** Ferme le suivi. L'app ne demande jamais pourquoi. */
-    fun endFollowUp() = viewModelScope.launch {
+    /**
+     * Ferme le suivi, et emporte les rendez-vous qu'il avait posés.
+     *
+     * Sans ça, les CPN et les vaccins programmés restaient dans l'agenda après la
+     * fermeture du suivi : des rappels pour des rendez-vous qui n'existent plus,
+     * sans moyen évident de comprendre d'où ils venaient.
+     */
+    fun endFollowUp(alsoRemoveEvents: Boolean = true) = viewModelScope.launch {
         state.value.ongoing?.let { repo.endFollowUp(it.id) }
+        if (alsoRemoveEvents) events?.deleteGeneratedCare()
     }
+
+    /** Combien de rendez-vous du carnet sont encore posés dans l'agenda. */
+    suspend fun generatedEventCount(): Int = events?.countGeneratedCare() ?: 0
 
     /** Corrige la date de départ quand l'échographie donne un autre terme. */
     fun correctStartDate(date: LocalDate) = viewModelScope.launch {

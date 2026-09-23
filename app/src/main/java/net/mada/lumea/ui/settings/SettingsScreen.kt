@@ -397,7 +397,29 @@ fun SettingsScreen(
                 )
             }
 
-            Group("Widget d'écran d'accueil") {
+            Group("Agenda") {
+                Text("Jours fériés", style = MaterialTheme.typography.labelLarge)
+                Spacer(Modifier.height(8.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    net.mada.lumea.domain.agenda.HolidayCountry.entries.forEach { country ->
+                        FilterChip(
+                            selected = settings.holidayCountry == country,
+                            onClick = { vm.setHolidayCountry(country) },
+                            label = { Text(country.label) },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Text(
+                    "Les fériés s'affichent dans le calendrier, en plus de tes " +
+                        "propres événements. Ils sont calculés sur le téléphone : " +
+                        "aucune connexion n'est nécessaire, même pour l'an prochain.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            Group("Widget d\'écran d\'accueil") {
                 SwitchRow(
                     title = "Mode discret",
                     subtitle = "Le widget n'affiche qu'un point et le nom de l'app. " +
@@ -452,6 +474,10 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+
+            Group("Effacer mes données") {
+                EraseSection(onErase = { vm.erase(it, context) })
             }
 
             Spacer(Modifier.height(24.dp))
