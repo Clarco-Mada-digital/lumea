@@ -83,12 +83,8 @@ jobs:
         with:
           name: Lumea ${{ env.VERSION }}
           files: ${{ env.APK_NAME }}
-          generate_release_notes: true
-          body: |
-            ## Lumea ${{ env.VERSION }}
-
-            APK signé, prêt à installer.
-
-            > **Rappel médical** — le contenu de santé de cette version doit avoir
-            > été relu par un soignant. Le document de relecture est dans
-            > `docs/CONTENU-MEDICAL.md`.
+          generate_release_notes: false
+          # Les notes détaillées sont écrites à la main dans .github/, et
+          # reprises telles quelles : une liste de commits ne dit rien à
+          # quelqu'un qui vient télécharger l'application.
+          body_path: .github/release-notes-${{ env.VERSION }}.md
