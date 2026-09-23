@@ -28,6 +28,7 @@ import androidx.compose.material.icons.rounded.FormatItalic
 import androidx.compose.material.icons.rounded.FormatListBulleted
 import androidx.compose.material.icons.rounded.FormatStrikethrough
 import androidx.compose.material.icons.rounded.FormatUnderlined
+import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Title
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -92,9 +93,12 @@ fun RichTextToolbar(
     textFieldValue: TextFieldValue,
     onValueChange: (TextFieldValue) -> Unit,
     modifier: Modifier = Modifier,
+    /** Ouvre l'enregistreur. Laissé vide là où la voix n'a pas de sens. */
+    onRequestVoice: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val store = remember { net.mada.lumea.data.media.MediaStore(context) }
     val photoPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
@@ -102,9 +106,10 @@ fun RichTextToolbar(
             // La copie du fichier part sur un fil d'arrière-plan : une photo de
             // plusieurs mégaoctets gelait l'écran le temps de l'écriture.
             scope.launch {
-                val localPath = withContext(Dispatchers.IO) {
-                    saveImageToInternalStorage(context, uri)
-                }
+                // Seul le nom est écrit dans la note : un chemin absolu ne survit
+                // ni à une restauration sur un autre téléphone, ni à une simple
+                // réinstallation.
+                val localPath = store.saveImage(uri)
                 if (localPath != null) {
                     val imageTag = "\n\n![Image]($localPath)\n\n"
                     val newText = textFieldValue.text + imageTag
@@ -172,6 +177,13 @@ fun RichTextToolbar(
                     icon = Icons.Rounded.FormatListBulleted,
                     description = "Liste à puces",
                     onClick = { onValueChange(applyPrefix(textFieldValue, "• ")) }
+                )
+            }
+            item {
+                ToolbarButton(
+                    icon = Icons.Rounded.Mic,
+                    description = "Enregistrement vocal",
+                    onClick = { onRequestVoice() },
                 )
             }
             item {
@@ -249,13 +261,27 @@ fun MarkdownViewer(
     textColor: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
 ) {
     val lines = text.lines()
+    val context = LocalContext.current
+    val store = remember { net.mada.lumea.data.media.MediaStore(context) }
+
     Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(6.dp)) {
         lines.forEach { line ->
             val trimmed = line.trim()
             when {
+                // Un enregistrement vocal : même syntaxe que les images, avec son
+                // propre marqueur pour ne pas tenter de le décoder en bitmap.
+                trimmed.startsWith("!audio[") && trimmed.endsWith(")") -> {
+                    VoiceNotePlayer(
+                        reference = trimmed.substringAfter("](").dropLast(1),
+                        store = store,
+                    )
+                }
                 trimmed.startsWith("![") && trimmed.contains("](") && trimmed.endsWith(")") -> {
-                    val path = trimmed.substringAfter("](").dropLast(1)
-                    LocalImageCard(path = path)
+                    // Le nom seul suffit : il se résout à l'affichage, ce qui
+                    // rend les notes indépendantes du chemin de l'application.
+                    LocalImageCard(path = store.resolve(
+                        trimmed.substringAfter("](").dropLast(1)
+                    ).absolutePath)
                 }
                 trimmed.startsWith("# ") -> {
                     Text(

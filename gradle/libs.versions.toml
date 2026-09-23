@@ -2,6 +2,8 @@
 agp = "8.7.2"
 # Custom Tabs : le navigateur du téléphone affiché dans l'app, session partagée.
 browser = "1.8.0"
+# Génération de QR code, en pur Java : fonctionne hors ligne.
+zxing = "3.5.3"
 kotlin = "2.0.21"
 ksp = "2.0.21-1.0.28"
 coreKtx = "1.15.0"
@@ -22,6 +24,7 @@ splashscreen = "1.0.1"
 
 [libraries]
 androidx-browser = { group = "androidx.browser", name = "browser", version.ref = "browser" }
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 androidx-ui-test-junit4 = { group = "androidx.compose.ui", name = "ui-test-junit4" }
 androidx-ui-test-manifest = { group = "androidx.compose.ui", name = "ui-test-manifest" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

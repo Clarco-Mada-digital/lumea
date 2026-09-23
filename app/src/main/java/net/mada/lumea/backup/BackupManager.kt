@@ -40,6 +40,7 @@ class BackupManager(
     private val context: Context,
     private val db: LumeaDatabase,
     private val settings: SettingsRepository? = null,
+    private val media: net.mada.lumea.data.media.MediaStore? = null,
 ) {
 
     private val json = Json { prettyPrint = true; ignoreUnknownKeys = true }
@@ -81,6 +82,18 @@ class BackupManager(
         habitChecks = db.habitDao().getAllChecks().map(HabitCheckEntity::toDto),
         pregnancies = db.pregnancyDao().getAll().map(PregnancyEntity::toDto),
         prenatalCare = db.prenatalCareDao().getAll().map(PrenatalCareEntity::toDto),
+        // Les photos et enregistrements partent avec le reste : sans eux, une
+        // note restaurée affiche des fichiers introuvables.
+        media = media?.all()?.mapNotNull { file ->
+            runCatching {
+                MediaDto(
+                    name = file.name,
+                    content = android.util.Base64.encodeToString(
+                        file.readBytes(), android.util.Base64.NO_WRAP,
+                    ),
+                )
+            }.getOrNull()
+        }.orEmpty(),
     )
 
     /** Sérialise la sauvegarde en mémoire : sert aux sauvegardes automatiques. */
@@ -200,6 +213,23 @@ class BackupManager(
              * DataStore, pas dans la base, et rien ne les lie aux tables.
              */
             if (selection.settings) payload.settings?.let { applySettings(it) }
+
+            /*
+             * Les fichiers joints suivent les notes et le journal : c'est là
+             * qu'ils sont référencés. Ils sont écrits hors de la transaction —
+             * ce sont des fichiers, pas des lignes de base — et un fichier déjà
+             * présent n'est jamais écrasé.
+             */
+            if (selection.notes || selection.logs) {
+                payload.media.forEach { item ->
+                    runCatching {
+                        media?.restore(
+                            item.name,
+                            android.util.Base64.decode(item.content, android.util.Base64.NO_WRAP),
+                        )
+                    }
+                }
+            }
             payload.count(selection)
         }
     }
@@ -321,6 +351,7 @@ data class Backup(
     val pregnancies: List<PregnancyDto> = emptyList(),
     val prenatalCare: List<PrenatalCareDto> = emptyList(),
     val settings: SettingsDto? = null,
+    val media: List<MediaDto> = emptyList(),
 ) {
     fun count() = notes.size + events.size + periods.size + logs.size
 
@@ -377,6 +408,9 @@ data class PregnancyDto(
     val riskFactors: String = "",
     val birthDate: Long? = null,
 )
+
+@Serializable
+data class MediaDto(val name: String, val content: String)
 
 @Serializable
 data class SettingsDto(

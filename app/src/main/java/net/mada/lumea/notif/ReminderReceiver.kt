@@ -104,6 +104,11 @@ class ReminderReceiver : BroadcastReceiver() {
                 notifyLateCare(context, app)
                 // Le jour de cycle change chaque nuit : le widget suit.
                 net.mada.lumea.widget.LumeaWidget.refreshAll(context)
+
+                // Une copie par semaine, en silence. Voir [AutoBackup] : elle
+                // protège de l'effacement, pas du téléphone perdu.
+                app.autoBackup.runIfDue()
+                remindToCopyBackup(context, app)
             } finally {
                 ReminderScheduler.scheduleDailyCheck(context)
                 pending.finish()
@@ -156,6 +161,30 @@ class ReminderReceiver : BroadcastReceiver() {
         )
     }
 
+    /**
+     * Rappelle, une fois par mois, de mettre une sauvegarde à l'abri.
+     *
+     * La copie automatique vit dans le téléphone : elle ne survit pas à sa perte.
+     * Sortir un fichier de l'appareil est le seul geste que l'application ne peut
+     * pas faire à la place de quelqu'un — d'où ce rappel, et pas plus souvent que
+     * mensuel pour qu'il garde du poids.
+     */
+    private suspend fun remindToCopyBackup(context: Context, app: net.mada.lumea.di.AppContainer) {
+        val today = LocalDate.now()
+        if (today.dayOfMonth != 1) return
+        val hasData = app.cycle.allPeriods().isNotEmpty()
+        if (!hasData) return
+
+        Notifications.show(
+            context,
+            Notifications.CHANNEL_JOURNAL,
+            BACKUP_NOTIF_ID,
+            "Mets une sauvegarde à l'abri",
+            "Lumea en garde une sur ce téléphone — mais elle partirait avec lui. " +
+                "Exporte-la sur une carte SD ou envoie-la-toi, depuis les réglages.",
+        )
+    }
+
     /** L'heure du rappel de journal, relue pour reprogrammer le lendemain. */
     private fun runBlockingMinute(context: Context): Int = kotlinx.coroutines.runBlocking {
         context.applicationContext.container().settings.settings.first().journalReminderMinute
@@ -165,5 +194,6 @@ class ReminderReceiver : BroadcastReceiver() {
         const val CYCLE_NOTIF_ID = 900_001
         const val JOURNAL_NOTIF_ID = 900_010
         const val CARE_NOTIF_ID = 900_020
+        const val BACKUP_NOTIF_ID = 900_030
     }
 }

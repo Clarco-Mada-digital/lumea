@@ -73,6 +73,9 @@ fun NoteEditorScreen(
     val state by vm.state.collectAsStateWithLifecycle()
     val folders by vm.folders.collectAsStateWithLifecycle()
     var confirmDelete by remember { mutableStateOf(false) }
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val mediaStore = remember(context) { net.mada.lumea.data.media.MediaStore(context) }
+    var voiceOpen by remember { mutableStateOf(false) }
 
     /*
      * Le corps est tenu en TextFieldValue (et pas en simple String) : sans la
@@ -160,6 +163,7 @@ fun NoteEditorScreen(
                 RichTextToolbar(
                     textFieldValue = body,
                     onValueChange = { editBody(it) },
+                    onRequestVoice = { voiceOpen = !voiceOpen },
                     modifier = Modifier
                         .fillMaxWidth()
                         .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Bottom))
@@ -217,6 +221,18 @@ fun NoteEditorScreen(
             Spacer(Modifier.height(12.dp))
             ColorPickerRow(selected = state.colorIndex, onSelect = vm::setColor)
             Spacer(Modifier.height(16.dp))
+
+            if (voiceOpen) {
+                net.mada.lumea.ui.components.richtext.VoiceRecordButton(
+                    store = mediaStore,
+                    onRecorded = { name ->
+                        val updated = body.text + "\n\n!audio[Enregistrement]($name)\n\n"
+                        editBody(body.copy(text = updated, selection = TextRange(updated.length)))
+                        voiceOpen = false
+                    },
+                )
+                Spacer(Modifier.height(8.dp))
+            }
 
             if (state.isChecklist) {
                 ChecklistEditor(

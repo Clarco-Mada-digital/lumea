@@ -85,6 +85,25 @@ fun LessonReaderScreen(
         ) {
             item { LessonHeader(lesson) }
 
+            // La figure vient après le résumé et avant le texte : elle donne le
+            // schéma d'ensemble qu'on relit ensuite en détail.
+            figureFor(lesson.id)?.let { figure ->
+                item {
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = MaterialTheme.colorScheme.surfaceContainer
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 8.dp),
+                    ) {
+                        Column(Modifier.padding(16.dp)) {
+                            LessonFigureView(figure)
+                        }
+                    }
+                }
+            }
+
             items(lesson.sections, key = { it.heading }) { section ->
                 Column(
                     Modifier

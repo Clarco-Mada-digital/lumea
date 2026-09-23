@@ -78,6 +78,7 @@ fun DayLogScreen(
     val vm = containerViewModel(key = "log-$date") {
         DayLogViewModel(it.cycle, it.journal, it.settings, date)
     }
+    val context = androidx.compose.ui.platform.LocalContext.current
     val state by vm.state.collectAsStateWithLifecycle()
     val habits by vm.habits.collectAsStateWithLifecycle()
     val checkedHabits by vm.checkedHabits.collectAsStateWithLifecycle()
@@ -91,6 +92,8 @@ fun DayLogScreen(
         }
     }
 
+    val mediaStore = remember(context) { net.mada.lumea.data.media.MediaStore(context) }
+    var voiceOpen by remember { mutableStateOf(false) }
     var trackingOpen by remember { mutableStateOf(false) }
     LaunchedEffect(state.flow, state.energy, state.symptoms) {
         if (state.flow > 0 || state.energy > 0 || state.symptoms.isNotEmpty()) {
@@ -179,8 +182,31 @@ fun DayLogScreen(
                     journal = it
                     vm.setJournal(it.text)
                 },
+                onRequestVoice = { voiceOpen = !voiceOpen },
                 modifier = Modifier.fillMaxWidth(),
             )
+
+            /*
+             * La voix et l'écrit cohabitent dans la même journée : on peut dicter
+             * trois phrases et en écrire une. Écrire suppose de savoir écrire,
+             * d'avoir le temps et la force — pas toujours réunis.
+             */
+            if (voiceOpen) {
+                Spacer(Modifier.height(8.dp))
+                net.mada.lumea.ui.components.richtext.VoiceRecordButton(
+                    store = mediaStore,
+                    onRecorded = { name ->
+                        val tag = "\n\n!audio[Enregistrement]($name)\n\n"
+                        val updated = journal.text + tag
+                        journal = journal.copy(
+                            text = updated,
+                            selection = TextRange(updated.length),
+                        )
+                        vm.setJournal(updated)
+                        voiceOpen = false
+                    },
+                )
+            }
             Spacer(Modifier.height(8.dp))
             OutlinedTextField(
                 value = journal,

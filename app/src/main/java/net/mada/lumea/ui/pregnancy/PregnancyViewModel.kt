@@ -239,7 +239,13 @@ class PregnancyViewModel(
      * Ne contient que le suivi : ni journal, ni humeur, ni notes. Un document
      * qu'on tend à quelqu'un ne doit contenir que ce qu'on accepte de montrer.
      */
-    fun exportPdf(context: android.content.Context, uri: android.net.Uri, onDone: (Boolean) -> Unit) =
+    fun exportPdf(
+        context: android.content.Context,
+        uri: android.net.Uri,
+        options: net.mada.lumea.export.CarnetPdf.Options =
+            net.mada.lumea.export.CarnetPdf.Options(),
+        onDone: (Boolean) -> Unit,
+    ) =
         viewModelScope.launch {
             val current = state.value.ongoing
             if (current == null) {
@@ -247,17 +253,38 @@ class PregnancyViewModel(
                 return@launch
             }
             val name = settingsRepo?.settings?.first()?.displayName.orEmpty()
+            // Le QR va dans le pied de page : le soignant peut repartir avec
+            // l'essentiel sur son propre téléphone, sans photocopier la feuille.
+            val qr = net.mada.lumea.export.EmergencyQr.render(
+                net.mada.lumea.export.EmergencyQr.buildText(
+                    current, state.value.care, name, includeName = options.includeName,
+                ),
+                sizePx = 360,
+            )
             val result = net.mada.lumea.export.CarnetPdf.write(
                 context = context,
                 uri = uri,
                 pregnancy = current,
                 care = state.value.care,
                 displayName = name,
+                options = options,
+                qr = qr,
             )
             onDone(result.isSuccess)
         }
 
     fun suggestedPdfName() = net.mada.lumea.export.CarnetPdf.suggestedFileName()
+
+    /** Le QR de la fiche d'urgence, rendu en mémoire pour l'affichage à l'écran. */
+    suspend fun emergencyQr(includeName: Boolean): android.graphics.Bitmap? {
+        val current = state.value.ongoing ?: return null
+        val name = settingsRepo?.settings?.first()?.displayName.orEmpty()
+        return net.mada.lumea.export.EmergencyQr.render(
+            net.mada.lumea.export.EmergencyQr.buildText(
+                current, state.value.care, name, includeName,
+            )
+        )
+    }
 
     /** Le refus est définitif : on ne repropose pas le code à chaque ouverture. */
     fun dismissPinInvitation() = viewModelScope.launch {

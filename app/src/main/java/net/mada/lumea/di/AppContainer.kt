@@ -2,6 +2,7 @@ package net.mada.lumea.di
 
 import android.content.Context
 import net.mada.lumea.LumeaApp
+import net.mada.lumea.backup.AutoBackup
 import net.mada.lumea.backup.BackupManager
 import net.mada.lumea.data.db.LumeaDatabase
 import net.mada.lumea.data.prefs.SettingsRepository
@@ -32,7 +33,11 @@ class AppContainer(private val context: Context) {
 
     val settings: SettingsRepository by lazy { SettingsRepository(context) }
     val lock: LockManager by lazy { LockManager(context) }
-    val backup: BackupManager by lazy { BackupManager(context, db, settings) }
+    val media: net.mada.lumea.data.media.MediaStore by lazy {
+        net.mada.lumea.data.media.MediaStore(context)
+    }
+    val backup: BackupManager by lazy { BackupManager(context, db, settings, media) }
+    val autoBackup: AutoBackup by lazy { AutoBackup(context, backup) }
 }
 
 fun Context.container(): AppContainer = (applicationContext as LumeaApp).container

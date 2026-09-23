@@ -21,6 +21,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.PictureAsPdf
+import androidx.compose.material.icons.rounded.QrCode2
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -35,6 +36,9 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,6 +75,7 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EmergencyScreen(onBack: () -> Unit, onExportPdf: () -> Unit) {
+    var qrOpen by remember { mutableStateOf(false) }
     val context = androidx.compose.ui.platform.LocalContext.current
     val vm = containerViewModel { PregnancyViewModel(it.pregnancy, it.cycle, it.events, it.settings) }
     val state by vm.state.collectAsStateWithLifecycle()
@@ -302,6 +307,16 @@ fun EmergencyScreen(onBack: () -> Unit, onExportPdf: () -> Unit) {
             }
 
             item {
+                /*
+                 * Le QR d'abord : c'est l'option qui marche quand il n'y a ni
+                 * imprimante, ni réseau, ni batterie pour chercher dans des menus.
+                 */
+                Button(onClick = { qrOpen = true }, modifier = Modifier.fillMaxWidth()) {
+                    Icon(Icons.Rounded.QrCode2, contentDescription = null, Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Montrer en QR code")
+                }
+                Spacer(Modifier.height(8.dp))
                 OutlinedButton(onClick = onExportPdf, modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Rounded.PictureAsPdf, contentDescription = null, Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
@@ -324,6 +339,13 @@ fun EmergencyScreen(onBack: () -> Unit, onExportPdf: () -> Unit) {
                 )
             }
         }
+    }
+
+    if (qrOpen) {
+        EmergencyQrSheet(
+            loadQr = { includeName -> vm.emergencyQr(includeName) },
+            onDismiss = { qrOpen = false },
+        )
     }
 }
 
@@ -362,3 +384,4 @@ private fun ContactLine(
 }
 
 private val longDate = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.FRENCH)
+

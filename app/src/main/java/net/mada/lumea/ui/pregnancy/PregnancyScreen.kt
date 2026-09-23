@@ -82,9 +82,16 @@ fun PregnancyScreen(onBack: () -> Unit, onOpenEmergency: () -> Unit = {}) {
     }
     val context = androidx.compose.ui.platform.LocalContext.current
     var pdfResult by remember { mutableStateOf<Boolean?>(null) }
+    var pdfOptionsOpen by remember { mutableStateOf(false) }
+    var qrOpen by remember { mutableStateOf(false) }
+    var pendingOptions by remember {
+        mutableStateOf(net.mada.lumea.export.CarnetPdf.Options())
+    }
     val pdfLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.CreateDocument("application/pdf")
-    ) { uri -> if (uri != null) vm.exportPdf(context, uri) { pdfResult = it } }
+    ) { uri ->
+        if (uri != null) vm.exportPdf(context, uri, pendingOptions) { pdfResult = it }
+    }
     val state by vm.state.collectAsStateWithLifecycle()
     var menuOpen by remember { mutableStateOf(false) }
     var confirmEnd by remember { mutableStateOf(false) }
@@ -133,7 +140,14 @@ fun PregnancyScreen(onBack: () -> Unit, onOpenEmergency: () -> Unit = {}) {
                             text = { Text("Exporter mon carnet en PDF") },
                             onClick = {
                                 menuOpen = false
-                                pdfLauncher.launch(vm.suggestedPdfName())
+                                pdfOptionsOpen = true
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Fiche d'urgence en QR code") },
+                            onClick = {
+                                menuOpen = false
+                                qrOpen = true
                             },
                         )
                         DropdownMenuItem(
@@ -461,6 +475,24 @@ fun PregnancyScreen(onBack: () -> Unit, onOpenEmergency: () -> Unit = {}) {
         }
     }
 
+    if (pdfOptionsOpen) {
+        PdfOptionsSheet(
+            onExport = { options ->
+                pendingOptions = options
+                pdfOptionsOpen = false
+                pdfLauncher.launch(vm.suggestedPdfName())
+            },
+            onDismiss = { pdfOptionsOpen = false },
+        )
+    }
+
+    if (qrOpen) {
+        EmergencyQrSheet(
+            loadQr = { includeName -> vm.emergencyQr(includeName) },
+            onDismiss = { qrOpen = false },
+        )
+    }
+
     pdfResult?.let { success ->
         AlertDialog(
             onDismissRequest = { pdfResult = null },
@@ -468,8 +500,9 @@ fun PregnancyScreen(onBack: () -> Unit, onOpenEmergency: () -> Unit = {}) {
             text = {
                 Text(
                     if (success) {
-                        "Le PDF reprend tes rendez-vous, tes vaccins, tes doses de TPIg " +
-                            "et les résultats que tu as notés — rien de ton journal.\n\n" +
+                        "Le PDF reprend ce que tu as choisi, avec un QR code en bas " +
+                            "de page : le soignant peut le scanner et repartir avec " +
+                            "l'essentiel sur son téléphone.\n\n" +
                             "Tu peux le montrer en consultation ou l'imprimer. Il n'a " +
                             "aucune valeur officielle et ne remplace pas ton carnet de " +
                             "santé mère-enfant."

@@ -107,6 +107,8 @@ dependencies {
     implementation(libs.androidx.biometric)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.browser)
+    // QR code : bibliothèque Java pure, aucun accès réseau.
+    implementation(libs.zxing.core)
 
     implementation(libs.androidx.sqlite.ktx)
     implementation(libs.sqlcipher)
